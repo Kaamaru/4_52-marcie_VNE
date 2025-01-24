@@ -1,0 +1,36 @@
+{
+  "dialog": [
+    {
+      "character": "Jake",
+      "text": "Hello!"
+    },
+    {
+      "character": "Jonk",
+      "text": "Sup!!"
+    },
+    {
+      "character": "Alice",
+      "text": "How are you doing today?"
+    },
+    {
+      "character": "Jake",
+      "text": "I'm doing well, thanks for asking!"
+    },
+    {
+      "character": "Jonk",
+      "text": "What’s the plan for today?"
+    },
+    {
+      "character": "Alice",
+      "text": "Let's grab some coffee and talk."
+    },
+    {
+      "character": "Jake",
+      "text": "Sounds great! I could use a good cup of coffee."
+    },
+    {
+      "character": "Jonk",
+      "text": "Perfect! There's a nice place down the street."
+    }
+  ]
+}
