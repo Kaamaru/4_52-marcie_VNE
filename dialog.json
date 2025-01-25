@@ -3,42 +3,58 @@
     {
       "id": 1,
       "character": "A",
-      "text": "Hello!"
+      "text": "Hello!",
+      "posx": -1,
+      "posy": 0
     },
     {
       "id": 2,
       "character": "B",
-      "text": "Sup!!"
+      "text": "Sup!!",
+      "posx": 1,
+      "posy": 0
     },
     {
       "id": 1,
       "character": "A",
-      "text": "How are you doing today?"
+      "text": "How are you doing today?",
+      "posx": -1,
+      "posy": 0
     },
     {
       "id": 2,
       "character": "B",
-      "text": "I'm doing well, thanks for asking!"
+      "text": "I'm doing well, thanks for asking!",
+      "posx": 1,
+      "posy": 0
     },
     {
       "id": 1,
       "character": "A",
-      "text": "What’s the plan for today?"
+      "text": "What’s the plan for today?",
+      "posx": -1,
+      "posy": 0
     },
     {
       "id": 2,
       "character": "B",
-      "text": "Let's grab some coffee and talk."
+      "text": "Let's grab some coffee and talk.",
+      "posx": 1,
+      "posy": 0
     },
     {
       "id": 1,
       "character": "A",
-      "text": "Sounds great! I could use a good cup of coffee."
+      "text": "Sounds great! I could use a good cup of coffee.",
+      "posx": -1,
+      "posy": 0
     },
     {
       "id": 2,
       "character": "B",
-      "text": "Perfect! There's a nice place down the street."
+      "text": "Perfect! There's a nice place down the street.",
+      "posx": 1,
+      "posy": 0
     }
   ]
 }
