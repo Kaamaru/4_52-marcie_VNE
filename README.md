@@ -14,3 +14,4 @@ fontsc creds:
 -3KRONIKA_.ttf
 -4Buddychampion.ttf
 -5Monocraft.ttf
+*MOS = Microsoft Office Specialist 
