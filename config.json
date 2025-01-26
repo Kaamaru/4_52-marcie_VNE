@@ -1,0 +1,12 @@
+{
+  "config": {
+    "asset_dir": "assets/",
+    "fontmap": {
+      "ft1": "font1.ttf",
+      "ft2": "font2.ttf",
+      "ft3": "font3.ttf",
+      "ft4": "font4.ttf",
+      "ft5": "font5.ttf"
+    }
+  }
+}
