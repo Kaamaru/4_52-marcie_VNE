@@ -1,0 +1,13 @@
+{
+  "dialog": [
+    {
+      "id": 1,
+      "character": "A",
+      "text": "1This is supposed to be blank dw!",
+      "posx": -1,
+      "posy": 0,
+      "ts_in": 1,
+      "ts_out": 0
+    }
+  ]
+}

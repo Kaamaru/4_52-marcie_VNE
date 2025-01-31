@@ -12,7 +12,6 @@ use serde::Deserialize;
 use serde_json::Result;
 use std::collections::HashMap;
 use std::default;
-use std::ffi::c_int;
 use std::fmt::Debug;
 use std::fmt::Formatter;
 use std::fs::File;
@@ -22,14 +21,11 @@ use crate::ConfigDetails;
 use crate::Configs;
 #[derive(Deserialize, Debug)]
 struct Part {
-    id: i32,
-    character: String,
-    text: String,
-    posx: i32,
-    posy: i32,
-    // test: i32,
-    ts_in: i32,
-    ts_out: i32,
+    id: Option<i32>,
+    character: Option<String>,
+    text: Option<String>,
+    posx: Option<i32>,
+    posy: Option<i32>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -84,14 +80,17 @@ async fn load_parts<'a>(
     active_char: &mut String,
     active_part: &mut String,
     is_dialog_end: &mut bool,
+    dialoglen: &mut i32,
 ) {
+    *dialoglen = dialog.dialog.len() as i32;
+
     if let Some(dialog_part) = dialog.dialog.get(*dialogindex as usize) {
         println!("{:?}", dialog_part);
-        *active_char_x = dialog_part.posx;
-        *active_char_y = dialog_part.posy;
-        *active_char_id = dialog_part.id;
-        *active_char = dialog_part.character.clone();
-        *active_part = dialog_part.text.clone();
+        *active_char_x = dialog_part.posx.expect("Errr loading posx");
+        *active_char_y = dialog_part.posy.expect("Errr loading posy");
+        *active_char_id = dialog_part.id.expect("Errr loading id");
+        *active_char = dialog_part.character.clone().expect("Errr loading character");
+        *active_part = dialog_part.text.clone().expect("Errr loading text");
 
         *is_dialog_end = false;
 
@@ -115,65 +114,27 @@ async fn load_parts<'a>(
 }
 
 pub fn prev_dialog(dialogindex: &mut i32) {
-    *dialogindex += -1;
-}
-
-async fn next_dialog(
-    dialogindex: &mut i32,
-    dialog: &Dialog,
-    alive_char_map: &mut HashMap<i32, bool>,
-    char_map_pos: &mut HashMap<i32, Vec2>,
-) {
-    // *alive_char_map.insert(, )
-
-    if let Some(dialog_part) = dialog.dialog.get(*dialogindex as usize) {
-        char_map_pos.insert(dialog_part.id, vec2(dialog_part.posx as f32, dialog_part.posy as f32));
-
-        if dialog_part.ts_in < 0 {
-            alive_char_map.remove(&dialog_part.id);
-        }
-        if dialog_part.ts_in > 0 {
-            alive_char_map.insert(dialog_part.id, true);
-        }
-        if dialog_part.ts_in == 0 {
-            alive_char_map.insert(dialog_part.id, false);
-        }
+    if *dialogindex > 0 {
+        *dialogindex += -1;
     }
-
-    *dialogindex += 1;
-
-    //     if let Some(dialog_part) = dialog.dialog.get(*dialogindex as usize) {
-    //         println!("{:?}", dialog_part);
-    //         *active_char_x = dialog_part.posx;
-    //         *active_char_y = dialog_part.posy;
-    //         *active_char_id = dialog_part.id;
-    //         *active_char = dialog_part.character.clone();
-    //         *active_part = dialog_part.text.clone();
-    //
-    //         *is_dialog_end = false;
-    //
-    //         *title1 = active_char.clone();
-    //         *txtrend2 = active_part.clone();
-    //     } else {
-    //         info!("Index out of bounds: {}", dialogindex);
-    //
-    //         *active_char_x = 0;
-    //         *active_char_y = 0;
-    //         *active_char_id = 0;
-    //         *active_char = String::from("None_0");
-    //         *active_part = String::from(".");
-    //
-    //         *is_dialog_end = true;
-    //         *dialogindex = -1;
-    //
-    //         *title1 = active_char.clone();
-    //         *txtrend2 = active_part.clone();
-    //     }
 }
 
-async fn load_file(dialog: &mut Dialog, asts_dir: &str) {
-    let mut file = File::open(format!("{asts_dir}Dialogues/dialog.json").as_str())
-        .expect(format!("2{asts_dir}Dialogues/dialog.json").as_str());
+pub fn next_dialog(dialogindex: &mut i32, dialoglen: &i32) {
+    if (*dialogindex + 1) < *dialoglen {
+        *dialogindex += 1;
+    }
+}
+
+async fn load_file(
+    dialog: &mut Dialog,
+    asts_dir: &str,
+    dialogfilename: &str,
+    dialogindex: &mut i32,
+    starting_point: i32,
+) {
+    *dialogindex = starting_point;
+    let mut file = File::open(format!("{asts_dir}Dialogues/{dialogfilename}").as_str())
+        .expect(format!("2Where is {asts_dir}Dialogues/{dialogfilename}?").as_str());
     let mut contents = String::new();
     file.read_to_string(&mut contents)
         .expect("2CAN'T READ FILE BRUHH??");
@@ -213,11 +174,13 @@ pub async fn run_dialog(configs: &ConfigDetails) {
     // }
 
     let asts_dir: &str = configs.asset_dir.as_str();
+    let mut dialogfilename: &str = "blank.json";
     let mut dialogshow = true;
+    let mut dialoglen: i32 = 0;
     let mut is_dialog_end = false;
-    let mut title_new_pos: Vec2 = Vec2::new(0.0, 0.0);
     let mut slidevar1 = 0.0;
     let mut txtinp1 = String::new();
+    let mut title_new_pos: Vec2 = Vec2::new(0.0, 0.0);
     let mut temp1 = String::new();
     let mut boxsize: Vec2 = Vec2::new(10., 150.);
     let mut txtrend1 = String::new();
@@ -227,21 +190,13 @@ pub async fn run_dialog(configs: &ConfigDetails) {
     let mut mos_in_dialog: bool = false;
     let mut dialog: Dialog = Dialog {
         dialog: vec![Part {
-            id: 0,
-            character: String::from("Error_1"),
-            text: String::from("Error_1"),
-            posx: 0,
-            posy: 0,
-            // test: 0,
-            ts_in: 0,
-            ts_out: 0,
+            id: Some(0),
+            character: Some(String::from("Error_1")),
+            text: Some(String::from("Error_1")),
+            posx: Some(0),
+            posy: Some(0),
         }],
     };
-
-    let mut alive_char_map: HashMap<i32, bool> = HashMap::new();
-    let mut char_map_pos: HashMap<i32, Vec2> = HashMap::new();
-    let ts_pos_change_y: f32 = 0.0;
-    let inactive_opacity: f32 = 0.70;
 
     //Load fonts into HashMap , GOSH I LOVE HASHMAPS MWAH MWAH!!
     let font_map: HashMap<&str, Font> = load_font_map(&configs.fontmap, &asts_dir).await;
@@ -253,8 +208,6 @@ pub async fn run_dialog(configs: &ConfigDetails) {
     //Add HashMap<Name from path , path.png>
     let mut imgpaths: HashMap<String, String> = HashMap::new();
 
-    let mut ct: HashMap<&str, Texture2D> = HashMap::new();
-
     let path = ".";
     let entries = std::fs::read_dir(format!("{asts_dir}Characters").as_str()).unwrap();
     for entry in entries {
@@ -264,21 +217,12 @@ pub async fn run_dialog(configs: &ConfigDetails) {
                     Ok(k) => k,
                     Err(e) => panic!("{:?}", e),
                 };
-
                 filename1 = filename1.trim_end_matches(".png").to_string();
                 // println!("Processing entry: {}", filename1.trim_end_matches(".png"));
                 imgpaths.insert(
                     filename1.clone().to_uppercase(),
                     format!("{asts_dir}Characters/{}.png", filename1),
                 );
-
-                ct.insert(
-                    filename1.clone().to_uppercase().as_str(),
-                    load_texture(format!("{asts_dir}Characters/{}.png", filename1).as_str())
-                        .await
-                        .unwrap(),
-                );
-
                 println!("{:?}", imgpaths);
             }
             Err(e) => {
@@ -286,10 +230,13 @@ pub async fn run_dialog(configs: &ConfigDetails) {
             }
         };
     }
-    let mut c_id : HashMap<i32,&str> = HashMap::new();
-    c_id.insert(1, "CHARLOTTE");
-    c_id.insert(2, "FERRIS");
 
+    let c1: Texture2D = load_texture(format!("{asts_dir}Characters/Charlotte.png").as_str())
+        .await
+        .unwrap();
+    let c2: Texture2D = load_texture(format!("{asts_dir}Characters/Ferris.png").as_str())
+        .await
+        .unwrap();
 
     // do scale HERE
 
@@ -299,23 +246,7 @@ pub async fn run_dialog(configs: &ConfigDetails) {
     let mut active_char_x: i32 = 0;
     let mut active_char_y: i32 = 0;
 
-    let font_1 = font_map.get("ft5").unwrap();
-
-    let title_skin1 = {
-        let label_style = root_ui()
-            .style_builder()
-            .with_font(&font_1)
-            .expect("2 FONT LOAD FAIL")
-            .margin(RectOffset::new(10.0, 0.0, 0.0, 0.0))
-            .text_color(Color::from_rgba(180, 180, 120, 255))
-            .font_size(30)
-            .build();
-
-        Skin {
-            label_style,
-            ..root_ui().default_skin()
-        }
-    };
+    let font_1 = font_map.get("ft1").unwrap();
 
     let skin1 = {
         let label_style = root_ui()
@@ -340,13 +271,39 @@ pub async fn run_dialog(configs: &ConfigDetails) {
         }
     };
 
+    let title_skin1 = {
+        let label_style = root_ui()
+            .style_builder()
+            .with_font(&font_1)
+            .expect("2 FONT LOAD FAIL")
+            .margin(RectOffset::new(10.0, 0.0, 0.0, 0.0))
+            .text_color(Color::from_rgba(180, 180, 120, 255))
+            .font_size(30)
+            .build();
+
+        Skin {
+            label_style,
+            ..root_ui().default_skin()
+        }
+    };
+
     let mut win_skin = skin1.clone();
     let mut char_title_skin = title_skin1.clone();
-    load_file(&mut dialog, &asts_dir).await;
+    load_file(&mut dialog, &asts_dir, &dialogfilename, &mut dialogindex, 0).await;
 
     loop {
         clear_background(WHITE);
         //
+
+        if is_key_pressed(KeyCode::Key1) {
+            dialogfilename = "dialog.json";
+            load_file(&mut dialog, &asts_dir, &dialogfilename, &mut dialogindex, 0).await;
+        }
+        if is_key_pressed(KeyCode::Key2) {
+            dialogfilename = "dialog2.json";
+            load_file(&mut dialog, &asts_dir, &dialogfilename, &mut dialogindex, 0).await;
+        }
+
         if is_key_pressed(KeyCode::Space) {
             info!("1");
             dialogshow = !dialogshow;
@@ -381,6 +338,8 @@ pub async fn run_dialog(configs: &ConfigDetails) {
                 info!("Y");
             }
 
+            root_ui().push_skin(&win_skin);
+
             mos_in_dialog = if boxposrange_x.contains(&mouse_position().0)
                 && boxposrange_y.contains(&mouse_position().1)
             {
@@ -389,9 +348,10 @@ pub async fn run_dialog(configs: &ConfigDetails) {
                 false
             };
             info!("{}", mos_in_dialog);
+            info!("{} <> {}", dialogindex, dialoglen);
 
             title_new_pos = vec2((active_char_x + 1) as f32 * dialogboxsize.x / 3.0, 0.0);
-            root_ui().pop_skin();
+            //NAME TITLE
             if active_char_id != 0 {
                 //Name Title
                 root_ui().push_skin(&char_title_skin);
@@ -411,16 +371,13 @@ pub async fn run_dialog(configs: &ConfigDetails) {
             }
 
             // MAIN DIALOGUE LABEL HERE!!
-            root_ui().push_skin(&win_skin);
             widgets::Window::new(hash!(), dialogboxpos, dialogboxsize)
                 .label(title1.clone().as_str())
                 .titlebar(false)
                 .movable(false)
                 .close_button(true)
-                .ui(&mut *root_ui(), |ui_0| {
-                    // ui_0.window(hash!(), dialogboxpos - vec2( title_new_pos.x , dialogboxsize.y /4.0 ), Vec2::new(450., 200.),|ui_1|{});
-
-                    ui_0.label(None, &txtrend2);
+                .ui(&mut *root_ui(), |ui| {
+                    ui.label(None, &txtrend2);
                 });
 
             root_ui().pop_skin();
@@ -444,15 +401,11 @@ pub async fn run_dialog(configs: &ConfigDetails) {
                 &mut active_char,
                 &mut active_part,
                 &mut is_dialog_end,
+                &mut dialoglen,
             )
             .await;
             // dialogindex += 1;
-            next_dialog(
-                &mut dialogindex,
-                &dialog,
-                &mut alive_char_map,
-                &mut char_map_pos,
-            );
+            next_dialog(&mut dialogindex, &dialoglen);
         }
         if mos_in_dialog && (is_mouse_button_pressed(MouseButton::Right) || mouse_wheel().1 > 0.0) {
             // next_dialog(&mut dialogindex);
@@ -471,55 +424,37 @@ pub async fn run_dialog(configs: &ConfigDetails) {
                 &mut active_char,
                 &mut active_part,
                 &mut is_dialog_end,
+                &mut dialoglen,
             )
             .await;
             // dialogindex += 1;
             prev_dialog(&mut dialogindex);
         }
 
-        //spawing
-        for (k, v) in alive_char_map.iter_mut() {
-            let chosen_pos: Vec2 = *char_map_pos.get(k).unwrap();
-            let mut alivepos: Vec2 = get_pos(chosen_pos.x as i32, chosen_pos.y as i32).await;
-            let opacity: f32 = if *v { 1.0 } else { inactive_opacity };
-            draw_texture_ex(
-                &ct.get(c_id.get(k).unwrap()).unwrap(),
-                alivepos.x,
-                alivepos.y + ts_pos_change_y,
-                Color::new(1.0, 1.0, 1.0, opacity),
-                get_textureparams(imgpaths.get(c_id.get(k).unwrap().as_str()).expect("Failed to Draw")).await,
-            );
+        let mut activepos: Vec2 = get_pos(active_char_x, active_char_y).await;
 
-            match k {
-                1 => {}
-
-                _ => info!("None!?!"),
+        match active_char_id {
+            1 => {
+                ({
+                    draw_texture_ex(
+                        &c1,
+                        activepos.x,
+                        activepos.y,
+                        WHITE,
+                        get_textureparams(imgpaths.get("CHARLOTTE").expect("Failed to Draw")).await,
+                    )
+                })
             }
 
-            // match active_char_id {
-            //     1 => {
-            //         ({
-            //             draw_texture_ex(
-            //                 &c1,
-            //                 activepos.x,
-            //                 activepos.y + ts_pos_change_y,
-            //                 Color::new(1.0, 1.0, 1.0, opacity),
-            //                 get_textureparams(imgpaths.get("CHARLOTTE").expect("Failed to Draw"))
-            //                     .await,
-            //             )
-            //         })
-            //     }
-            //
-            //     2 => draw_texture_ex(
-            //         &c2,
-            //         activepos.x,
-            //         activepos.y,
-            //         Color::new(1.0, 1.0, 1.0, opacity),
-            //         get_textureparams(imgpaths.get("FERRIS").expect("Failed to Draw")).await,
-            //     ),
-            //
-            //     _ => info!("None??!"),
-            // }
+            2 => draw_texture_ex(
+                &c2,
+                activepos.x,
+                activepos.y,
+                WHITE,
+                get_textureparams(imgpaths.get("FERRIS").expect("Failed to Draw")).await,
+            ),
+
+            _ => info!("None??!"),
         }
 
         next_frame().await;

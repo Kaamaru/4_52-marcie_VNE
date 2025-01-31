@@ -1,0 +1,76 @@
+{
+  "dialog": [
+    {
+      "id": 1,
+      "character": "A",
+      "text": "1Where the heck are we?",
+      "posx": -1,
+      "posy": 0,
+      "ts_in": 1,
+      "ts_out": 0
+    },
+    {
+      "id": 2,
+      "character": "B",
+      "text": "2On the other side of the wormhole, I suppose...",
+      "posx": 1,
+      "posy": 0,
+      "ts_in": 0,
+      "ts_out": 0
+    },
+    {
+      "id": 1,
+      "character": "A",
+      "text": "3Wait, so we're in some other dimension now?",
+      "posx": 0,
+      "posy": 1,
+      "ts_in": 0,
+      "ts_out": 0
+    },
+    {
+      "id": 2,
+      "character": "B",
+      "text": "4I think so. It's a little hard to tell.",
+      "posx": 1,
+      "posy": 2,
+      "ts_in": 0,
+      "ts_out": 0
+    },
+    {
+      "id": 1,
+      "character": "A",
+      "text": "5Well, if we're stuck here, at least we should make the best of it. What's the plan?",
+      "posx": -1,
+      "posy": 0,
+      "ts_in": 0,
+      "ts_out": 0
+    },
+    {
+      "id": 2,
+      "character": "B",
+      "text": "6How about we grab some coffee and figure things out?",
+      "posx": 1,
+      "posy": 0,
+      "ts_in": 0,
+      "ts_out": 0
+    },
+    {
+      "id": 1,
+      "character": "A",
+      "text": "7Sounds like a plan. I could really use a good cup of coffee right now.",
+      "posx": -1,
+      "posy": 0,
+      "ts_in": 0,
+      "ts_out": 0
+    },
+    {
+      "id": 2,
+      "character": "B",
+      "text": "8Perfect! There's a nice place just down the street.",
+      "posx": 1,
+      "posy": 0,
+      "ts_in": 0,
+      "ts_out": 0
+    }
+  ]
+}
