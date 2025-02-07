@@ -66,6 +66,35 @@ async fn get_textureparams(img: &str) -> DrawTextureParams {
     }
 }
 
+fn wrap_text(text: &str, max_width: f32, font_size: u16) -> Vec<String> {
+    let mut wrapped_lines = Vec::new();
+    let mut current_line = String::new();
+
+    for word in text.split_whitespace() {
+        let test_line = if current_line.is_empty() {
+            word.to_string()
+        } else {
+            format!("{} {}", current_line, word)
+        };
+
+        let text_width = measure_text(&test_line, None, font_size, 1.0).width;
+        println!("{:?}", text_width);
+
+        if text_width > max_width {
+            wrapped_lines.push(current_line);
+            current_line = word.to_string();
+        } else {
+            current_line = test_line;
+        }
+    }
+
+    if !current_line.is_empty() {
+        wrapped_lines.push(current_line);
+    }
+
+    wrapped_lines
+}
+
 async fn load_parts<'a>(
     dialog: &Dialog,
     dialogindex: &mut i32,
@@ -89,7 +118,10 @@ async fn load_parts<'a>(
         *active_char_x = dialog_part.posx.expect("Errr loading posx");
         *active_char_y = dialog_part.posy.expect("Errr loading posy");
         *active_char_id = dialog_part.id.expect("Errr loading id");
-        *active_char = dialog_part.character.clone().expect("Errr loading character");
+        *active_char = dialog_part
+            .character
+            .clone()
+            .expect("Errr loading character");
         *active_part = dialog_part.text.clone().expect("Errr loading text");
 
         *is_dialog_end = false;
@@ -197,6 +229,7 @@ pub async fn run_dialog(configs: &ConfigDetails) {
             posy: Some(0),
         }],
     };
+    let mut main_label_size = 30;
 
     //Load fonts into HashMap , GOSH I LOVE HASHMAPS MWAH MWAH!!
     let font_map: HashMap<&str, Font> = load_font_map(&configs.fontmap, &asts_dir).await;
@@ -254,7 +287,7 @@ pub async fn run_dialog(configs: &ConfigDetails) {
             .with_font(&font_1)
             .expect("1 FONT LOAD FAIL")
             .text_color(Color::from_rgba(180, 180, 120, 255))
-            .font_size(30)
+            .font_size(main_label_size)
             .build();
 
         let button_style = root_ui()
@@ -286,6 +319,8 @@ pub async fn run_dialog(configs: &ConfigDetails) {
             ..root_ui().default_skin()
         }
     };
+
+    let mut allowsize = 0.0;
 
     let mut win_skin = skin1.clone();
     let mut char_title_skin = title_skin1.clone();
@@ -354,7 +389,6 @@ pub async fn run_dialog(configs: &ConfigDetails) {
             //NAME TITLE
             if active_char_id != 0 {
                 //Name Title
-                root_ui().push_skin(&char_title_skin);
 
                 widgets::Window::new(
                     hash!(),
@@ -370,6 +404,18 @@ pub async fn run_dialog(configs: &ConfigDetails) {
                 root_ui().pop_skin();
             }
 
+            widgets::Window::new(
+                hash!(),
+                vec2(0.0,0.0 ),
+                vec2(300.0,300.0 ),
+            )
+            .titlebar(false)
+            .movable(false)
+            .ui(&mut *root_ui(), |ui_1| {
+                ui_1.label(None, &active_char);
+                ui_1.slider(hash!(), "0.500", 0.0..500.0, &mut allowsize);
+            });
+
             // MAIN DIALOGUE LABEL HERE!!
             widgets::Window::new(hash!(), dialogboxpos, dialogboxsize)
                 .label(title1.clone().as_str())
@@ -377,7 +423,20 @@ pub async fn run_dialog(configs: &ConfigDetails) {
                 .movable(false)
                 .close_button(true)
                 .ui(&mut *root_ui(), |ui| {
+                    ui.push_skin(&win_skin);
+
                     ui.label(None, &txtrend2);
+                    let wrapped_lines = wrap_text(&txtrend2, allowsize, main_label_size);
+
+                    println!("{:?}", wrapped_lines);
+                    println!(">{:?}", dialogboxsize.x);
+                    println!(">{:?}", main_label_size);
+                    for line in wrapped_lines {
+                        ui.label(None, &line);
+                        // y_position += font_size * 1.5;
+                    }
+                    ui.pop_skin();
+
                 });
 
             root_ui().pop_skin();
